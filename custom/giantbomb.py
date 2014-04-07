@@ -25,6 +25,15 @@ import re
 import requests
 import string
 import math
+import os
+
+# sevabot has strange namespace, read file instead
+config = {}
+path = os.getcwd() + "\\custom\\config.fu"
+lines = [line.strip() for line in open(path)]
+for line in lines:
+    keyvalue = line.split(":")
+    config[keyvalue[0]] = keyvalue[1]
 
 logger = logging.getLogger('GiantbombHandler')
 logger.setLevel(logging.INFO)
@@ -95,6 +104,9 @@ class GiantbombHandler(StatefulSkypeHandler):
         # Make sure we don't trigger ourselves with the help text
         if not desc:
             msg.Chat.SendMessage(HELP_TEXT)
+            return True
+        else:
+            return False
 
     def handle_message(self, msg, status):
         """
@@ -114,7 +126,7 @@ class GiantbombHandler(StatefulSkypeHandler):
             return False
 
         if len(words) >= 2:
-            desc = " ".join(words[2:])
+            desc = " ".join(words[1:])
         else:
             desc = None
 
@@ -122,10 +134,10 @@ class GiantbombHandler(StatefulSkypeHandler):
         # Check if we match any of our commands
         for name, cmd in self.commands.items():
             if lower.startswith(name):
-                #cmd(msg, status, desc)
+                cmd(msg, status, desc)
                 logger.info("\ncmd: " + str(cmd) + " name: " + name + "\n")
-                msg
                 return True
+
 
 
 
@@ -193,16 +205,19 @@ class GiantbombHandler(StatefulSkypeHandler):
         """
         !gb detailed
         """
+        msg.Chat.SendMessage("detailed")
 
     def game_franchise(self, msg, status, desc):
         """
         !gb franchise
         """
+        msg.Chat.SendMessage("franchise")
 
     def game_studio(self, msg, status, desc):
         """
         !gb studio
         """
+        msg.Chat.SendMessage("studio")
 
 
 # export the instance to sevabot

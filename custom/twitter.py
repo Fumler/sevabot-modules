@@ -10,10 +10,14 @@ from sevabot.utils import ensure_unicode
 
 from twitter import *
 import re
-import sys
+import os
 
-sys.path.append("..")
-import config
+config = {}
+path = os.getcwd() + "\\custom\\config.fu"
+lines = [line.strip() for line in open(path)]
+for line in lines:
+    keyvalue = line.split(":")
+    config[keyvalue[0]] = keyvalue[1]
 
 logger = logging.getLogger('TwitterHandler')
 
@@ -21,6 +25,7 @@ logger = logging.getLogger('TwitterHandler')
 logger.setLevel(logging.INFO)
 
 logger.debug('TwitterHandler module level load import')
+
 
 
 class TwitterHandler(StatefulSkypeHandler):
@@ -32,7 +37,7 @@ class TwitterHandler(StatefulSkypeHandler):
         """
         Use init method to init a handler
         """
-        #super(self, TwitterHandler).__init__()
+
         logger.debug("TwitterHandler constructed")
 
     def init(self, sevabot):
@@ -40,8 +45,7 @@ class TwitterHandler(StatefulSkypeHandler):
         Set-up our state. This is called every time module is (re)loaded.
         :param skype: Handle to Skype4Py instace
         """
-        #super(self, TwitterHandler).init(sevabot)
-        #logger.error("Handler is %s", self.handler)
+
         logger.debug("TwitterHandler init")
         self.sevabot = sevabot
         self.skype = sevabot.getSkype()
@@ -51,26 +55,16 @@ class TwitterHandler(StatefulSkypeHandler):
         Override this method to customize a handler
         """
         body = ensure_unicode(msg.Body)
-        #words = body.split()
 
-        #if not len(words):
-            #return False
-        #else:
-            #if words[0] != re.findall("(?P<url>https?://twitter[^\s]+)", words):
-                #return False
-            #else:
-                #match = re.findall("(?P<url>https?://twitter[^\s]+)", body)
-                #matchStr = match[0]
-                #idnum = matchStr.split("/")[5]
-
-                #if len(idnum):
-                    #self.print_twitter(self, msg, status, idnum)
-                    #return True
+        logger.debug("Twitter handler got: %s" % body)
+        words = body.split(" ")
 
         if len(body):
+            logger.debug(body)
             words = body.split()
 
             if len(words[0]):
+                logger.debug("Has words[0]")
                 if not re.search("(?P<url>https?://twitter[^\s]+)", words[0]):
                     return False
                 else:
@@ -98,8 +92,8 @@ class TwitterHandler(StatefulSkypeHandler):
         Print stuff
         """
 
-        t = Twitter(auth=OAuth(config.keys["tw_access_token"], config.keys["tw_access_token_secret"],
-            config.keys["tw_consumer_key"], config.keys["tw_consumer_secret"]))
+        t = Twitter(auth=OAuth(config["tw_access_token"], config["tw_access_token_secret"],
+            config["tw_consumer_key"], config["tw_consumer_secret"]))
 
         tweet = t.statuses.show(_id=args)
         text = tweet['text']
@@ -109,9 +103,6 @@ class TwitterHandler(StatefulSkypeHandler):
         shortUrl = tweet['entities']['urls'][0]['url']
 
         msg.Chat.SendMessage(author + " tweeted: " + text)
-        #msg.Chat.SendMessage("Shit matches! " + args)
-
-
 
 
 # export the instance to sevabot
