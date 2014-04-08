@@ -23,7 +23,7 @@ logger.setLevel(logging.INFO)
 logger.debug('VideoSiteHandler module level load import')
 
 config = {}
-path = os.getcwd() + "\\custom\\config.fu"
+path = os.getcwd() + "/custom/config.fu"
 lines = [line.strip() for line in open(path)]
 for line in lines:
     keyvalue = line.split(":")
