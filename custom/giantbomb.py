@@ -35,7 +35,7 @@ for line in lines:
     keyvalue = line.split(":")
     config[keyvalue[0]] = keyvalue[1]
 api_key = config["gb_api_key"]
-fields = "?api_key=" + api_key + "&format=json&field_list=publishers,genres,franchises,developers,platforms,original_release_date,name,expected_release_year,expected_release_quarter,expected_release_month,expected_release_day,deck"
+fields = "?api_key=" + api_key + "&format=json&field_list=publishers,genres,franchises,developers,platforms,original_release_date,name,expected_release_year,expected_release_quarter,expected_release_month,expected_release_day,deck,site_detail_url,similar_games,themes"
 
 logger = logging.getLogger('GiantbombHandler')
 logger.setLevel(logging.DEBUG)
@@ -55,6 +55,11 @@ Commands
 !gb detailed <name>: You get a lot of info... Example:
 
     !gb detailed watch dogs
+
+### Commands below this line are not implemented
+###
+### Please let me know of feature requests/bugs! kkty
+###
 
 !gb studio <name>: You get information about a specific game studio. Example:
 
@@ -128,7 +133,7 @@ class GiantbombHandler(StatefulSkypeHandler):
             elif len(words) > 1:
                 cmd = (" ").join(words[2:])
                 if (words[1] == "detailed"):
-                    self.game_detailed(msg, status, cmd)
+                    self.game_search(msg, status, cmd, "detailed")
                     return True
                 elif (words[1] == "studio"):
                     self.game_studio(msg, status, cmd)
@@ -138,7 +143,7 @@ class GiantbombHandler(StatefulSkypeHandler):
                     return True
                 else:
                     cmd = (" ").join(words[1:])
-                    self.game_search(msg, status, cmd)
+                    self.game_search(msg, status, cmd, "normal")
                     return True
             else:
                 return False
@@ -159,7 +164,7 @@ class GiantbombHandler(StatefulSkypeHandler):
         """
         msg.Chat.SendMessage("detailed: " + desc)
 
-    def game_search(self, msg, status, cmd):
+    def game_search(self, msg, status, cmd, type):
         """
         !gb <game>
         """
@@ -172,17 +177,18 @@ class GiantbombHandler(StatefulSkypeHandler):
         api_data = None
         message = None
 
-        if (data["error"] == "OK"):
+        if (data["number_of_total_results"] > 0):
             api_url = data["results"][0]["api_detail_url"] + fields
             logger.debug("GAME URL: " + api_url)
         else:
             api_url = None
+            return False
 
         if (api_url):
             api_open = urllib2.urlopen(api_url)
             api_data = json.load(api_open)
 
-        if (api_data["error"] == "OK"):
+        if (api_data["number_of_total_results"] > 0):
             name = api_data["results"]["name"]
             deck = api_data["results"]["deck"]
             publisher = api_data["results"]["publishers"]
@@ -195,11 +201,13 @@ class GiantbombHandler(StatefulSkypeHandler):
                 franchise = franchise[0]["name"]
             else:
                 franchise = None
-            developer = api_data["results"]["developers"]
-            if (developer):
-                developer = developer[0]["name"]
-            else:
-                developer = None
+
+            developers = api_data["results"]["developers"]
+            developers_list = []
+            for developer in developers:
+                developers_list.append(developer["name"])
+            developers_names = (", ").join(developers_list)
+
             genres = api_data["results"]["genres"]
             genres_list = []
             for genre in genres:
@@ -217,6 +225,20 @@ class GiantbombHandler(StatefulSkypeHandler):
             ex_rls_year = api_data["results"]["expected_release_year"]
             ex_rls_quarter = api_data["results"]["expected_release_quarter"]
             orig_rls_date = api_data["results"]["original_release_date"]
+
+            game_url = api_data["results"]["site_detail_url"]
+
+            themes = api_data["results"]["themes"]
+            themes_list = []
+            for theme in themes:
+                themes_list.append(theme["name"])
+            themes_names = (", ").join(themes_list)
+
+            similar_games = api_data["results"]["similar_games"]
+            similar_games_list = []
+            for game in similar_games:
+                similar_games_list.append(game["name"])
+            similar_games_names = (", ").join(similar_games_list)
 
             release = None
 
@@ -238,22 +260,41 @@ class GiantbombHandler(StatefulSkypeHandler):
                             release = None
 
             if (name):
-                message = "Name: " + name + "\n"
+                message = name + "\n"
+                message = message + "#" * 10 + "\n# "
+            if (type == "detailed"):
+                if (deck):
+                    message = message + "Desc: " + deck + "\n# "
             if (genres_names):
-                message = message + "Genre(s): " + genres_names + "\n"
+                message = message + "Genre(s): " + genres_names + "\n# "
+            if (type == "detailed"):
+                if (themes_names):
+                    message = message + "Theme(s): " + themes_names + "\n# "
             if (franchise):
-                message = message + "Franchise: " + franchise + "\n"
-            if (platforms_names):
-                message = message + "Platform(s): " + platforms_names + "\n"
-            if (developer):
-                message = message + "Developer(s): " + developer + "\n"
+                message = message + "Franchise: " + franchise + "\n# "
+            if (developers_names):
+                message = message + "Developer(s): " + developers_names + "\n# "
             if (publisher):
-                message = message + "Publisher(s): " + publisher + "\n"
-            if (release):
-                message = message + "Release: " + str(release) + "\n"
+                message = message + "Publisher(s): " + publisher + "\n# "
+            if (platforms_names):
+                message = message + "Platform(s): " + platforms_names + "\n# "
 
+
+
+            if (type == "detailed"):
+                if (similar_games_names):
+                    message = message + "Similar games: " + similar_games_names + "\n# "
+
+            if (release):
+                message = message + "Release: " + str(release) + "\n# "
+            if (game_url):
+                message = message + "#" * 10 + "\n"
+                message = message + game_url
             if (message):
                 msg.Chat.SendMessage(message)
+
+        else:
+            return False
 
 
     def game_franchise(self, msg, status, desc):
