@@ -23,7 +23,7 @@ logger.setLevel(logging.INFO)
 logger.debug('VideoSiteHandler module level load import')
 
 config = {}
-path = os.getcwd() + "/custom/config.fu"
+path = os.path.join(os.getcwd(), "custom", "config.fu")
 lines = [line.strip() for line in open(path)]
 for line in lines:
     keyvalue = line.split(":")
@@ -73,6 +73,7 @@ class VideoSiteHandler(StatefulSkypeHandler):
 
             if message_y:
                 url = "https://www.googleapis.com/youtube/v3/videos?id=" + message_y.group(2) + "&key=" + config["yt_api_key"] + "&part=snippet,contentDetails,statistics&fields=items(snippet/channelTitle,snippet/title,contentDetails/duration,statistics/viewCount)"
+                logging.info("URL: " + url)
                 json_data = urllib2.urlopen(url)
                 data = json.load(json_data)
                 main = data["items"][0]

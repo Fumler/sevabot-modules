@@ -13,7 +13,7 @@ import re
 import os
 
 config = {}
-path = os.getcwd() + "/custom/config.fu"
+path = os.path.join(os.getcwd(), "custom", "config.fu")
 lines = [line.strip() for line in open(path)]
 for line in lines:
     keyvalue = line.split(":")

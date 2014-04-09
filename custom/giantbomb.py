@@ -29,7 +29,7 @@ import datetime
 
 # sevabot has strange namespace, read file instead
 config = {}
-path = os.getcwd() + "/custom/config.fu"
+path = os.path.join(os.getcwd(), "custom", "config.fu")
 lines = [line.strip() for line in open(path)]
 for line in lines:
     keyvalue = line.split(":")
