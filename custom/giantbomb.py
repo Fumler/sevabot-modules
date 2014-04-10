@@ -187,7 +187,7 @@ class GiantbombHandler(StatefulSkypeHandler):
                 for result in data["results"]:
                     names.append(result["name"])
 
-                msg.Chat.sendMessage("You need to specify. E.g. " + (", ").join.names)
+                msg.Chat.SendMessage("You need to specify. E.g. " + (", ").join.names)
         else:
             api_url = None
             return False

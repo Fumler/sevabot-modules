@@ -75,15 +75,24 @@ class VideoSiteHandler(StatefulSkypeHandler):
                 url = "https://www.googleapis.com/youtube/v3/videos?id=" + message_y.group(2) + "&key=" + config["yt_api_key"] + "&part=snippet,contentDetails,statistics&fields=items(snippet/channelTitle,snippet/title,contentDetails/duration,statistics/viewCount)"
                 logging.info("URL: " + url)
                 request = urllib2.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.16 Safari/537.36"})
-                json_data = urllib2.urlopen(request)
-                data = json.load(json_data)
-                main = data["items"][0]
-                title = main["snippet"]["title"]
-                channel = main["snippet"]["channelTitle"]
-                views = main["statistics"]["viewCount"]
-                #duration = time.strftime("%H:%M:%S", time.gmtime(main["contentDetails"]["duration"]))
-                stats = title + " by " + channel + " (" + views + " views)"
-                self.send_msg(msg, status, stats)
+                try:
+                    json_data = urllib2.urlopen(request)
+                except URLError as e:
+                    if hasattr(e, 'reason'):
+                        msg.Chat.SendMessage('We failed to reach a server.')
+                        msg.Chat.SendMessage('Reason: ' + e.reason)
+                    elif hasattr(e, 'code'):
+                        msg.Chat.SendMessage('The server couldn\'t fulfill the request.')
+                        msg.Chat.SendMessage('Error code: ' + e.code)
+                else:
+                    data = json.load(json_data)
+                    main = data["items"][0]
+                    title = main["snippet"]["title"]
+                    channel = main["snippet"]["channelTitle"]
+                    views = main["statistics"]["viewCount"]
+                    #duration = time.strftime("%H:%M:%S", time.gmtime(main["contentDetails"]["duration"]))
+                    stats = title + " by " + channel + " (" + views + " views)"
+                    self.send_msg(msg, status, stats)
                 return True
             elif message_v:
                 url = "http://vimeo.com/api/v2/video/" + message_v.group(2) + ".json"
