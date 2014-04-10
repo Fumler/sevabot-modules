@@ -180,7 +180,7 @@ class GiantbombHandler(StatefulSkypeHandler):
         if (data["number_of_total_results"] > 0):
             if (data["number_of_total_results"] == 1):
                 api_url = data["results"][0]["api_detail_url"] + fields
-            elif (data["results"][0]["name"].lower() == cmd.lower())
+            elif (data["results"][0]["name"].lower() == cmd.lower()):
                 api_url = data["results"][0]["api_detail_url"] + fields
             else:
                 names = []
