@@ -77,7 +77,7 @@ class VideoSiteHandler(StatefulSkypeHandler):
                 request = urllib2.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.16 Safari/537.36"})
                 try:
                     json_data = urllib2.urlopen(request)
-                except URLError as e:
+                except urllib2.URLError as e:
                     if hasattr(e, 'reason'):
                         msg.Chat.SendMessage('We failed to reach a server.')
                         msg.Chat.SendMessage('Reason: ' + e.reason)
