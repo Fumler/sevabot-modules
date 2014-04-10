@@ -169,7 +169,7 @@ class GiantbombHandler(StatefulSkypeHandler):
         !gb <game>
         """
         cmd = cmd.replace(" ", "%20")
-        url = 'http://www.giantbomb.com/api/search/?api_key=' + api_key + '&format=json&query="' + cmd + '"&resources=game&limit=1&field_list=api_detail_url'
+        url = 'http://www.giantbomb.com/api/search/?api_key=' + api_key + '&format=json&query="' + cmd + '"&resources=game&limit=10&field_list=api_detail_url,name'
         logger.debug("SEARCH URL: " + url)
         url_open = urllib2.urlopen(url)
         data = json.load(url_open)
@@ -178,8 +178,16 @@ class GiantbombHandler(StatefulSkypeHandler):
         message = None
 
         if (data["number_of_total_results"] > 0):
-            api_url = data["results"][0]["api_detail_url"] + fields
-            logger.debug("GAME URL: " + api_url)
+            if (data["number_of_total_results"] == 1):
+                api_url = data["results"][0]["api_detail_url"] + fields
+            elif (data["results"][0]["name"].lower() == cmd.lower())
+                api_url = data["results"][0]["api_detail_url"] + fields
+            else:
+                names = []
+                for result in data["results"]:
+                    names.append(result["name"])
+
+                msg.Chat.sendMessage("You need to specify. E.g. " + (", ").join.names)
         else:
             api_url = None
             return False
@@ -257,7 +265,7 @@ class GiantbombHandler(StatefulSkypeHandler):
                         if (orig_rls_date):
                             release = datetime.datetime.strptime(orig_rls_date, '%Y-%m-%d %H:%M:%S').strftime('%d. %B %Y')
                         else:
-                            release = None
+                            release = "TBA"
 
             if (name):
                 message = name + "\n"

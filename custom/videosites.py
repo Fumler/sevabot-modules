@@ -74,7 +74,8 @@ class VideoSiteHandler(StatefulSkypeHandler):
             if message_y:
                 url = "https://www.googleapis.com/youtube/v3/videos?id=" + message_y.group(2) + "&key=" + config["yt_api_key"] + "&part=snippet,contentDetails,statistics&fields=items(snippet/channelTitle,snippet/title,contentDetails/duration,statistics/viewCount)"
                 logging.info("URL: " + url)
-                json_data = urllib2.urlopen(url)
+                request = urllib2.Request(url, headers={"User-Agent: Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.16 Safari/537.36"})
+                json_data = urllib2.urlopen(request)
                 data = json.load(json_data)
                 main = data["items"][0]
                 title = main["snippet"]["title"]
