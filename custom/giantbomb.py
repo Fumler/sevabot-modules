@@ -7,8 +7,7 @@
 #
 # Purpose: Module for Sevabot that accesses Giantbomb.com's wiki to fetch information about games
 #
-# Dependency: This module uses the non-standard module 'requests'. It can be acquired by doing
-#             'pip install requests'
+# Dependency: None
 #
 #
 # License: See the LICENSE file in the repo
@@ -26,6 +25,7 @@ import urllib2
 import json
 import os
 import datetime
+from collections import OrderedDict
 
 # sevabot has strange namespace, read file instead
 config = {}
@@ -35,6 +35,8 @@ for line in lines:
     keyvalue = line.split(":")
     config[keyvalue[0]] = keyvalue[1]
 api_key = config["gb_api_key"]
+
+# limit data we receive in json to reduce bandwidth
 fields = "?api_key=" + api_key + "&format=json&field_list=publishers,genres,franchises,developers,platforms,original_release_date,name,expected_release_year,expected_release_quarter,expected_release_month,expected_release_day,deck,site_detail_url,similar_games,themes"
 
 logger = logging.getLogger('GiantbombHandler')
@@ -94,21 +96,11 @@ class GiantbombHandler(StatefulSkypeHandler):
         self.sevabot = sevabot
         self.skype = sevabot.getSkype()
 
-        self.commands = {
-            "!gb": self.help,
-            "!giantbomb": self.help,
-            "detailed": self.game_detailed,
-            "studio": self.game_studio,
-            "franchise": self.game_franchise,
-        }
-
-
     def help(self, msg, status, desc):
         """
         Print help text to chat.
         """
 
-        # Make sure we don't trigger ourselves with the help text
         msg.Chat.SendMessage(HELP_TEXT)
 
     def handle_message(self, msg, status):
@@ -117,6 +109,7 @@ class GiantbombHandler(StatefulSkypeHandler):
         """
 
         # if the chat message is from the bot, ignore it.
+        # probably some skype function to fetch your own name, but meh..
         if msg.FromHandle == "WHG Bot":
             return False
 
@@ -126,11 +119,14 @@ class GiantbombHandler(StatefulSkypeHandler):
         # if it's an empty string, ignore it.
         if len(words) == 0:
             return False
+        # if the first word someone writes is this
         if (words[0] == "!gb" or words[0] == "!giantbomb"):
+            # we know they wrote nothing else
             if len(words) == 1:
                 self.help(msg, status, HELP_TEXT)
                 return True
             elif len(words) > 1:
+                # if second word is a command, do stuff
                 cmd = (" ").join(words[2:])
                 if (words[1] == "detailed"):
                     self.game_search(msg, status, cmd, "detailed")
@@ -142,6 +138,8 @@ class GiantbombHandler(StatefulSkypeHandler):
                     self.game_franchise(msg, status, cmd)
                     return True
                 else:
+                    # if second word is not a command, join everything after !gb
+                    # and search for this instead, with less details
                     cmd = (" ").join(words[1:])
                     self.game_search(msg, status, cmd, "normal")
                     return True
@@ -158,36 +156,38 @@ class GiantbombHandler(StatefulSkypeHandler):
 
         logger.debug("GiantbombHandler shutdown")
 
-    def game_detailed(self, msg, status, desc):
-        """
-        !gb detailed
-        """
-        msg.Chat.SendMessage("detailed: " + desc)
 
     def game_search(self, msg, status, cmd, type):
         """
         !gb <game>
         """
-        cmd = cmd.replace(" ", "%20")
-        url = 'http://www.giantbomb.com/api/search/?api_key=' + api_key + '&format=json&query="' + cmd + '"&resources=game&limit=10&field_list=api_detail_url,name'
-        logger.debug("SEARCH URL: " + url)
+        # urls need %20 or + instead of whitespace
+        formatted_cmd = cmd.replace(" ", "%20")
+        url = 'http://www.giantbomb.com/api/search/?api_key=' + api_key + '&format=json&query="' + formatted_cmd + '"&resources=game&limit=10&field_list=api_detail_url,name'
         url_open = urllib2.urlopen(url)
         data = json.load(url_open)
         api_url = None
         api_data = None
         message = None
+        game_url = None
 
+        # the data we fetch here is just another api url for a specific game
+        # if we have more than 1 result, user needs to be more specific
+        # or if the name matches the first of many results we go right ahead
+        # the api returns closest match first (it seems D:)
         if (data["number_of_total_results"] > 0):
             if (data["number_of_total_results"] == 1):
                 api_url = data["results"][0]["api_detail_url"] + fields
             elif (data["results"][0]["name"].lower() == cmd.lower()):
                 api_url = data["results"][0]["api_detail_url"] + fields
             else:
+                # list 10 possible matches back to user
                 names = []
                 for result in data["results"]:
                     names.append(result["name"])
 
-                msg.Chat.SendMessage("You need to specify. E.g. " + (", ").join(names))
+                msg.Chat.SendMessage("You need to specify.\nMatches: " + (", ").join(names))
+                return False
         else:
             api_url = None
             return False
@@ -196,108 +196,111 @@ class GiantbombHandler(StatefulSkypeHandler):
             api_open = urllib2.urlopen(api_url)
             api_data = json.load(api_open)
 
+        # never more than 1 game returned, so only check if bigger than 0
         if (api_data["number_of_total_results"] > 0):
-            name = api_data["results"]["name"]
-            deck = api_data["results"]["deck"]
-            publisher = api_data["results"]["publishers"]
-            if (publisher):
-                publisher = publisher[0]["name"]
-            else:
-                publisher = None
-            franchise = api_data["results"]["franchises"]
-            if (franchise):
-                franchise = franchise[0]["name"]
-            else:
-                franchise = None
+            result = api_data["results"]
 
-            developers = api_data["results"]["developers"]
-            developers_list = []
-            for developer in developers:
-                developers_list.append(developer["name"])
-            developers_names = (", ").join(developers_list)
+            # make a dict for filtering
+            # normal is for !gb <game>
+            # detailed is for !gb detailed <game>
+            type_dict = OrderedDict([
+                ("name" , "normal"),
+                ("deck" , "detailed"),
+                ("franchises" , "normal"),
+                ("genres" , "normal"),
+                ("themes" , "detailed"),
+                ("developers" , "normal"),
+                ("publishers" , "normal"),
+                ("platforms" , "normal"),
+                ("similar_games" , "detailed"),
+                ("site_detail_url" , None),
+                ("expected_release_day" , None),
+                ("expected_release_month" , None),
+                ("expected_release_year" , None),
+                ("expected_release_quarter" , None),
+                ("original_release_date" , None)
+            ])
 
-            genres = api_data["results"]["genres"]
-            genres_list = []
-            for genre in genres:
-                genres_list.append(genre["name"])
-            genres_names = (", ").join(genres_list)
+            # make a dict for data that actually exists in the json
+            data_exists = OrderedDict([])
+            message = "#"*10+"\n"
 
-            platforms_list = []
-            platforms = api_data["results"]["platforms"]
-            for platform in platforms:
-                platforms_list.append(platform["abbreviation"])
-            platforms_names = (", ").join(platforms_list)
+            # insert data that exists
+            for key in type_dict:
+                if (result[key]):
+                    data_exists[key] = result[key]
 
-            ex_rls_day = api_data["results"]["expected_release_day"]
-            ex_rls_month = api_data["results"]["expected_release_month"]
-            ex_rls_year = api_data["results"]["expected_release_year"]
-            ex_rls_quarter = api_data["results"]["expected_release_quarter"]
-            orig_rls_date = api_data["results"]["original_release_date"]
+            # TODO: refactor
+            # dumb way to check if the value is a list or not, hardcoding ftw
+            for key in data_exists:
+                if (key == "genres" or key == "publishers" or key == "franchises" or key == "developers" or key == "themes" or key == "similar_games" or key == "platforms"):
+                    temp = []
+                    # replace list with a string: "item, item, item, item" etc
+                    for item in data_exists[key]:
+                        if (key == "platforms"):
+                            temp.append(item["abbreviation"])
+                        else:
+                            temp.append(item["name"])
 
-            game_url = api_data["results"]["site_detail_url"]
-
-            themes = api_data["results"]["themes"]
-            themes_list = []
-            for theme in themes:
-                themes_list.append(theme["name"])
-            themes_names = (", ").join(themes_list)
-
-            similar_games = api_data["results"]["similar_games"]
-            similar_games_list = []
-            for game in similar_games:
-                similar_games_list.append(game["name"])
-            similar_games_names = (", ").join(similar_games_list)
-
+                    data_exists[key] = (", ").join(temp)
+                if "site_detail_url" in data_exists:
+                    game_url = data_exists["site_detail_url"]
+                # if !gb <game>
+                if (type == "normal"):
+                    if (type_dict[key] == "normal"):
+                        if (key == "name"):
+                            message = data_exists[key] + "\n" + message
+                        else:
+                            message = message + "# " + key.title() + ": " + data_exists[key] + "\n"
+                # elif !gb detailed <game>
+                elif (type == "detailed"):
+                    if (type_dict[key] == "normal" or type_dict[key] == "detailed"):
+                        if (key == "name"):
+                            message = data_exists[key] + "\n" + message
+                        else:
+                            message = message + "# " + key.title() + ": " + data_exists[key] + "\n"
             release = None
-
-            if (ex_rls_day):
-                release = str(ex_rls_day) + ". " + self.get_month(ex_rls_month) + " " + str(ex_rls_year)
+            if "original_release_date" in data_exists:
+                release = datetime.datetime.strptime(data_exists["original_release_date"], '%Y-%m-%d %H:%M:%S').strftime('%d %B %Y')
+                release = "Released: " + str(release)
             else:
-                if (ex_rls_month):
-                    release = self.get_month(ex_rls_month) + " " + str(ex_rls_year)
-                else:
-                    if (ex_rls_year):
-                        if (ex_rls_quarter):
-                            release = ex_rls_quarter + " " + str(ex_rls_year)
-                        else:
-                            release = str(ex_rls_year)
+                if "expected_release_day" in data_exists:
+                    day = data_exists["expected_release_day"]
+                    month = data_exists["expected_release_month"]
+                    year = str(data_exists["expected_release_year"])
+                    if day >= 0 and day <= 9:
+                        day = "0" + str(day)
                     else:
-                        if (orig_rls_date):
-                            release = datetime.datetime.strptime(orig_rls_date, '%Y-%m-%d %H:%M:%S').strftime('%d. %B %Y')
+                        day = str(day)
+                    if month >= 0 and day <= 9:
+                        month = "0" + str(day)
+                    else:
+                        month = str(month)
+                    release = "Expected release: " + datetime.datetime.strptime(year + "-" + month + "-" + day + " 00:00:00", '%Y-%m-%d %H:%M:%S').strftime('%d %B %Y')
+                else:
+                    if "expected_release_month" in data_exists:
+                        month = data_exists["expected_release_month"]
+                        year = str(data_exists["expected_release_year"])
+                        if month >= 0 and day <= 9:
+                            month = "0" + str(day)
                         else:
-                            release = "TBA"
+                            month = str(month)
+                        release = "Expected release: " + datetime.datetime.strptime(year + "-" + month + " 00:00:00", "%Y-%m %H:%M:%S").strftime("%B %Y")
+                    else:
+                        if "expected_release_year" in data_exists:
+                            year = str(data_exists["expected_release_year"])
+                            if "expected_release_quarter" in data_exists:
+                                quarter = str(data_exists["expected_release_quarter"])
+                                release = "Expected release: " + quarter + " " + year
+                            else:
+                                release = "Expected release: " + year
+                        else:
+                            release = "Release not announced"
 
-            if (name):
-                message = name + "\n"
-                message = message + "#" * 10 + "\n# "
-            if (type == "detailed"):
-                if (deck):
-                    message = message + "Desc: " + deck + "\n# "
-            if (genres_names):
-                message = message + "Genre(s): " + genres_names + "\n# "
-            if (type == "detailed"):
-                if (themes_names):
-                    message = message + "Theme(s): " + themes_names + "\n# "
-            if (franchise):
-                message = message + "Franchise: " + franchise + "\n# "
-            if (developers_names):
-                message = message + "Developer(s): " + developers_names + "\n# "
-            if (publisher):
-                message = message + "Publisher(s): " + publisher + "\n# "
-            if (platforms_names):
-                message = message + "Platform(s): " + platforms_names + "\n# "
+            message = message + "# " + str(release) + "\n"
+            message = message + "#" * 10 + "\n"
+            message = message + game_url
 
-
-
-            if (type == "detailed"):
-                if (similar_games_names):
-                    message = message + "Similar games: " + similar_games_names + "\n# "
-
-            if (release):
-                message = message + "Release: " + str(release) + "\n# "
-            if (game_url):
-                message = message + "#" * 10 + "\n"
-                message = message + game_url
             if (message):
                 msg.Chat.SendMessage(message)
 
@@ -316,24 +319,6 @@ class GiantbombHandler(StatefulSkypeHandler):
         !gb studio
         """
         msg.Chat.SendMessage("studio")
-
-    def get_month(self, month):
-        months = {
-            1:"January",
-            2:"February",
-            3:"March",
-            4:"April",
-            5:"May",
-            6:"June",
-            7:"July",
-            8:"August",
-            9:"September",
-            10:"October",
-            11:"November",
-            12:"Desember"
-        }
-
-        return months[month]
 
 
 # export the instance to sevabot

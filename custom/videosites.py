@@ -13,6 +13,7 @@ import urllib2
 import os
 import json
 import time
+from urllib import urlencode
 
 
 logger = logging.getLogger('VideoSiteHandler')
@@ -72,18 +73,29 @@ class VideoSiteHandler(StatefulSkypeHandler):
             message_ts = ts.search(body)
 
             if message_y:
-                url = "https://www.googleapis.com/youtube/v3/videos?id=" + message_y.group(2) + "&key=" + config["yt_api_key"] + "&part=snippet,contentDetails,statistics&fields=items(snippet/channelTitle,snippet/title,contentDetails/duration,statistics/viewCount)"
+                #url = "https://www.googleapis.com/youtube/v3/videos?id=" + message_y.group(2) + "&key=" + config["yt_api_key"] + "&part=snippet,contentDetails,statistics&fields=items(snippet/channelTitle,snippet/title,contentDetails/duration,statistics/viewCount)"
+
+                url = "https://www.googleapis.com/youtube/v3/videos"
+                params = {
+                    "id" : message_y.group(2),
+                    "key" : config["yt_api_key"],
+                    "part" : "snippet,contentDetails,statistics",
+                    "fields" : "items(snippet/channelTitle,snippet/title,contentDetails/duration,statistics/viewCount)"
+                }
+                new_url = urlencode(params)
+                #request = urllib2.Request()
                 logging.info("URL: " + url)
-                request = urllib2.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.16 Safari/537.36"})
+                logging.info("NEW URL: " + str(new_url))
+                #request = urllib2.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.16 Safari/537.36"})
                 try:
-                    json_data = urllib2.urlopen(request)
+                    json_data = urllib2.urlopen(url + "/?%s" % new_url)
                 except urllib2.URLError as e:
                     if hasattr(e, 'reason'):
-                        msg.Chat.SendMessage('We failed to reach a server.')
-                        msg.Chat.SendMessage('Reason: ' + e.reason)
+                        logger.debug('We failed to reach a server.')
+                        logger.debug('Reason: ' + e.reason)
                     elif hasattr(e, 'code'):
-                        msg.Chat.SendMessage('The server couldn\'t fulfill the request.')
-                        msg.Chat.SendMessage('Error code: ' + e.code)
+                        logger.debug('The server couldn\'t fulfill the request.')
+                        logger.debug('Error code: ' + e.code)
                 else:
                     data = json.load(json_data)
                     main = data["items"][0]
