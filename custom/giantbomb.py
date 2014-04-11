@@ -227,8 +227,9 @@ class GiantbombHandler(StatefulSkypeHandler):
 
             # insert data that exists
             for key in type_dict:
-                if (result[key]):
-                    data_exists[key] = result[key]
+                if key in result:
+                    if (result[key]):
+                        data_exists[key] = result[key]
 
             # TODO: refactor
             # dumb way to check if the value is a list or not, hardcoding ftw
@@ -295,7 +296,7 @@ class GiantbombHandler(StatefulSkypeHandler):
                             else:
                                 release = "Expected release: " + year
                         else:
-                            release = "Release not announced"
+                            release = "Release: TBA"
 
             message = message + "# " + str(release) + "\n"
             message = message + "#" * 10 + "\n"
