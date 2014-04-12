@@ -181,17 +181,19 @@ class GiantbombHandler(StatefulSkypeHandler):
             elif (data["results"][0]["name"].lower() == cmd.lower()):
                 api_url = data["results"][0]["api_detail_url"] + fields
             else:
+                specify = True
                 names = []
+                #print data["results"]
                 # check if any of the matches have the exact same string as input
                 for result in data["results"]:
-                    names.append(result["name"])
-                    if (result["name"].lower() == cmd().lower()):
-                        names = None
+                    print result
+                    if (result["name"].lower() == cmd.lower()):
                         api_url = result["api_detail_url"] + fields
+                        specify = False
                     else:
                         names.append(result["name"])
                 # list 10 possible matches back to user
-                if (names):
+                if (specify):
                     msg.Chat.SendMessage("You need to specify.\nMatches: " + (", ").join(names))
                     return False
         else:
