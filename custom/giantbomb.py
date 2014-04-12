@@ -181,13 +181,19 @@ class GiantbombHandler(StatefulSkypeHandler):
             elif (data["results"][0]["name"].lower() == cmd.lower()):
                 api_url = data["results"][0]["api_detail_url"] + fields
             else:
-                # list 10 possible matches back to user
                 names = []
+                # check if any of the matches have the exact same string as input
                 for result in data["results"]:
                     names.append(result["name"])
-
-                msg.Chat.SendMessage("You need to specify.\nMatches: " + (", ").join(names))
-                return False
+                    if (result["name"].lower() == cmd().lower()):
+                        names = None
+                        api_url = result["api_detail_url"] + fields
+                    else:
+                        names.append(result["name"])
+                # list 10 possible matches back to user
+                if (names):
+                    msg.Chat.SendMessage("You need to specify.\nMatches: " + (", ").join(names))
+                    return False
         else:
             api_url = None
             return False
@@ -282,7 +288,7 @@ class GiantbombHandler(StatefulSkypeHandler):
                     if "expected_release_month" in data_exists:
                         month = data_exists["expected_release_month"]
                         year = str(data_exists["expected_release_year"])
-                        if month >= 0 and day <= 9:
+                        if month >= 0 and month <= 9:
                             month = "0" + str(day)
                         else:
                             month = str(month)
