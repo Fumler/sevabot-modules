@@ -101,9 +101,10 @@ class VideoSiteHandler(StatefulSkypeHandler):
                     main = data["items"][0]
                     title = main["snippet"]["title"]
                     channel = main["snippet"]["channelTitle"]
-                    views = main["statistics"]["viewCount"]
+                    views = int(main["statistics"]["viewCount"])
+                    views = "{:,}".format(views)
                     #duration = time.strftime("%H:%M:%S", time.gmtime(main["contentDetails"]["duration"]))
-                    stats = title + " by " + channel + " (" + views + " views)"
+                    stats = title + " by " + channel + " - " + views + " views"
                     self.send_msg(msg, status, stats)
                 return True
             elif message_v:
@@ -112,19 +113,23 @@ class VideoSiteHandler(StatefulSkypeHandler):
                 data = json.load(json_data)[0]
                 title = data["title"]
                 channel = data["user_name"]
-                views = data["stats_number_of_plays"]
-                stats = title + " by " + channel + " (" + str(views) + " views)"
+                views = int(data["stats_number_of_plays"])
+                views = "{:,}".format(views)
+                stats = title + " by " + channel + " - " + views + " views"
                 self.send_msg(msg, status, stats)
                 return True
             elif message_tv:
-                url = "https://api.twitch.tv/kraken/videos/" + message_tv.group(3).replace("/", "")
+                vid_id = message_tv.group(3).replace("/", "")
+                vid_id = vid_id.strip(" ")
+                url = "https://api.twitch.tv/kraken/videos/" + vid_id
                 json_data = urllib2.urlopen(url)
                 data = json.load(json_data)
 
                 if data:
                     title = data["title"]
                     game = data["game"]
-                    views = str(data["views"])
+                    views = int(data["views"])
+                    views = "{:,}".format(views)
                     streamer = data["channel"]["display_name"]
 
                     message = title + " by " + streamer + " - " + views + " views."
@@ -147,9 +152,10 @@ class VideoSiteHandler(StatefulSkypeHandler):
                     title = data["stream"]["channel"]["status"]
                     streamer = data["stream"]["channel"]["display_name"]
                     game = data["stream"]["channel"]["game"]
-                    viewers = data["stream"]["viewers"]
+                    viewers = int(data["stream"]["viewers"])
+                    viewers = "{:,}".format(viewers)
 
-                    message = streamer + " playing " + game + " - " + str(viewers) + " viewers"
+                    message = streamer + " playing " + game + " - " + viewers + " viewers"
                     self.send_msg(msg, status, message)
                     return True
 
