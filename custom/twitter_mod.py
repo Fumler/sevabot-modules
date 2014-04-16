@@ -98,9 +98,9 @@ class TwitterHandler(StatefulSkypeHandler):
         tweet = t.statuses.show(_id=args)
         text = tweet['text']
         author = tweet['user']['name']
-        date = tweet['created_at']
-        retweets = tweet['retweet_count']
-        shortUrl = tweet['entities']['urls'][0]['url']
+        #date = tweet['created_at']
+        #retweets = tweet['retweet_count']
+        #shortUrl = tweet['entities']['urls'][0]['url']
 
         msg.Chat.SendMessage(author + " tweeted: " + text)
 
