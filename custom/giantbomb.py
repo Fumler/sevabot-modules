@@ -282,7 +282,7 @@ class GiantbombHandler(StatefulSkypeHandler):
                     else:
                         day = str(day)
                     if month >= 0 and day <= 9:
-                        month = "0" + str(day)
+                        month = "0" + str(month)
                     else:
                         month = str(month)
                     release = "Expected release: " + datetime.datetime.strptime(year + "-" + month + "-" + day + " 00:00:00", '%Y-%m-%d %H:%M:%S').strftime('%d %B %Y')
@@ -291,7 +291,7 @@ class GiantbombHandler(StatefulSkypeHandler):
                         month = data_exists["expected_release_month"]
                         year = str(data_exists["expected_release_year"])
                         if month >= 0 and month <= 9:
-                            month = "0" + str(day)
+                            month = "0" + str(month)
                         else:
                             month = str(month)
                         release = "Expected release: " + datetime.datetime.strptime(year + "-" + month + " 00:00:00", "%Y-%m %H:%M:%S").strftime("%B %Y")
