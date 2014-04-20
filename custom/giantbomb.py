@@ -281,7 +281,7 @@ class GiantbombHandler(StatefulSkypeHandler):
                         day = "0" + str(day)
                     else:
                         day = str(day)
-                    if month >= 0 and day <= 9:
+                    if month >= 0 and month <= 9:
                         month = "0" + str(month)
                     else:
                         month = str(month)
