@@ -155,7 +155,7 @@ class VideoSiteHandler(StatefulSkypeHandler):
                     viewers = int(data["stream"]["viewers"])
                     viewers = "{:,}".format(viewers)
 
-                    message = streamer + " playing " + game + " - " + viewers + " viewers"
+                    message = title + " - " + viewers + " viewers"
                     self.send_msg(msg, status, message)
                     return True
 
