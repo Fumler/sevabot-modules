@@ -104,22 +104,23 @@ def getETA(timestamp):
     return "In the future!"
 
 def out(data):
-    output = data["Show Name"]
+    output = data.get("Show Name")
 
-    if data["Started"] != None and data["Ended"] != None:
+    if data.get("Started") != None and data.get("Ended") != None:
         output = output + " (%s till %s)" % (handleDate(data["Started"]), handleDate(data["Ended"]))
-    if data["Status"]:
+    if data.get("Status"):
         output = output + " " + data["Status"]
-    if data["Genres"]:
+    if data.get("Genres"):
         output = output + " // " + handleGenres(data["Genres"])
-    if data["Latest Episode"]:
+    if data.get("Latest Episode"):
         output = output + " | Latest: " + handleEpisode(data["Latest Episode"])
-    if data["Next Episode"]:
+    #if data["Next Episode"]:
+    if data.get("Next Episode"):
         output = output + " | Next: " + handleEpisode(data["Next Episode"])
-        if data["RFC3339"]:
-            output = output + " (ETA: " + getETA(data['GMT+0 NODST']) + ")"
+        if data.get("RFC3339"):
+            output = output + " (ETA: " + getETA(data.get('GMT+0 NODST')) + ")"
     if data["Show URL"]:
-        output = output + " | " + data["Show URL"]
+        output = output + " | " + data.get("Show URL")
     return output
 
 def main(args):
