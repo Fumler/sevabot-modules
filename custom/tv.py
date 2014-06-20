@@ -49,21 +49,25 @@ def handleData(str):
 def handleDate(str):
     if str != "":
         result = re.search("([^/]+)/([^/]+)/([^/]+)", str)
-        month = result.group(1)
-        day = result.group(2)
-        year = result.group(3)
 
-        if month and day and year:
-            return "%s.%s.%s" % (day, monthName[month], year[-2:])
+        if result:
+            month = result.group(1) or None
+            day = result.group(2) or None
+            year = result.group(3) or None
+
+            if month and day and year:
+                return "%s.%s.%s" % (day, monthName[month], year[-2:])
 
         result = re.search("([^/]+)/([^/]+)", str)
-        month = result.group(1)
-        year = result.group(2)
 
-        if month and year:
-            return "%s.%s.%s" % ("??", monthName[month], year[-2:])
+        if result:
+            month = result.group(1)
+            year = result.group(2)
 
-        return str
+            if month and year:
+                return "%s.%s.%s" % ("??", monthName[month], year[-2:])
+
+            return str
     else:
         return "?"
 
