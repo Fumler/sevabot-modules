@@ -143,7 +143,7 @@ def main(args):
     data = None
 
     url = "http://services.tvrage.com/tools/quickinfo.php?show=" + cmd
-    url = urllib.urlencode(url)
+    url = urllib.quote_plus(url)
 
     try:
         open = urllib2.urlopen(url)
