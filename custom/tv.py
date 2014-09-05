@@ -8,6 +8,7 @@ import sys
 import re
 import urllib2
 import time
+import urllib
 
 progname = 'tv'
 
@@ -138,11 +139,11 @@ def main(args):
         return
 
     cmd = " ".join(args[0:])
-    cmd = cmd.replace(" ", "%20")
 
     data = None
 
     url = "http://services.tvrage.com/tools/quickinfo.php?show=" + cmd
+    url = urllib.urlencode(url)
 
     try:
         open = urllib2.urlopen(url)
